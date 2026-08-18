@@ -1,0 +1,16 @@
+AIC Coordinator Command Centre
+
+Phase 1: Problem Identification
+Google Form -> Google Sheets -> Python/Pandas -> Streamlit
+
+Phase 2:
+Add Faculty/Section/Student master mapping.
+
+Phase 3:
+Add Progress Log and Evaluation Log.
+
+Phase 4:
+Add live/near-live Google Sheets refresh.
+
+Phase 5:
+Deploy Streamlit app.
