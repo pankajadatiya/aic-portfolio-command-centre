@@ -107,9 +107,9 @@ st.markdown("""
 .k1{background:#DBEAFE;border-color:#2563EB}.k2{background:#FCE7F3;border-color:#EC4899}.k3{background:#DCFCE7;border-color:#16A34A}
 .k4{background:#FFEDD5;border-color:#F97316}.k5{background:#FEE2E2;border-color:#EF4444}.k6{background:#EDE9FE;border-color:#7C3AED}
 .kpi-label{font-size:9px;font-weight:900;color:#111827}.kpi-value{font-size:25px;font-weight:900;color:#111827;margin-top:5px}
-.phase{height:112px;box-sizing:border-box;border-radius:14px;padding:10px 11px;border:2px solid;overflow:hidden}
+.phase{height:128px;box-sizing:border-box;border-radius:14px;padding:11px 12px;border:2px solid;overflow:hidden}
 .p1{background:#DBEAFE;border-color:#0057FF}.p2{background:#F3E8FF;border-color:#8E24AA}.p3{background:#D1FAE5;border-color:#00C853}.p4{background:#FFEDD5;border-color:#FF6D00}.p5{background:#FCE7F3;border-color:#FF1493}
-.pcode{font-size:9px;font-weight:900}.pname{font-size:14px;font-weight:900;margin-top:5px}.pct{font-size:25px;font-weight:900;margin-top:7px}.psub{font-size:10px;font-weight:750;margin-top:3px}
+.pcode{font-size:9px;font-weight:900}.pname{font-size:14px;font-weight:900;margin-top:5px}.pct{font-size:25px;font-weight:900;margin-top:8px;line-height:1}.psub{font-size:10px;font-weight:750;margin-top:4px;line-height:1.15}
 .note{font-size:10px;color:#4B5563}
 .stButton>button{min-height:52px!important;border-radius:10px!important;font-size:10px!important;font-weight:850!important;white-space:pre-line!important;border:2px solid #E5E7EB!important;background:white!important}
 .stButton>button:hover{background:#EFF6FF!important;border-color:#2563EB!important}
@@ -117,7 +117,7 @@ st.markdown("""
 .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:9px;font-weight:900}.green{background:#DCFCE7;color:#166534}.orange{background:#FFEDD5;color:#C2410C}.red{background:#FEE2E2;color:#B91C1C}
 </style>
 """,unsafe_allow_html=True)
-
+st.markdown('<div style="height:10px"></div>',unsafe_allow_html=True)
 st.markdown('<div class="hero"><span class="live">● LIVE TRACKING</span><div class="hero-title">🎯 AIC Portfolio Challenge</div><div class="hero-sub">Phase-wise Portfolio Progress • Faculty Monitoring • Student Submission Review</div></div>',unsafe_allow_html=True)
 
 avg=df["Overall Progress"].mean()
