@@ -1,8 +1,11 @@
 
 import streamlit as st
 import pandas as pd
-import numpy as np
+from pathlib import Path
 
+# ============================================================
+# PAGE CONFIG
+# ============================================================
 st.set_page_config(
     page_title="AIC Coordinator Command Centre",
     page_icon="🎯",
@@ -10,235 +13,473 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ---------- STYLE ----------
+# ============================================================
+# CSS — ONE SCREEN, COLOURFUL, COMPACT
+# ============================================================
 st.markdown("""
 <style>
-#MainMenu, footer, header {visibility:hidden;}
-.block-container {padding: 1rem 1.2rem 0.5rem 1.2rem; max-width:100%;}
-h1 {color:#172554; margin-bottom:0;}
-.subtitle {color:#64748b; margin-bottom:8px;}
-.kpi {border-radius:14px;padding:12px 14px;height:88px;border:1px solid #e2e8f0;}
-.kpi-label {font-size:12px;font-weight:700;color:#475569;}
-.kpi-value {font-size:27px;font-weight:800;color:#0f172a;margin-top:5px;}
-.blue{background:#eff6ff}.purple{background:#f5f3ff}.cyan{background:#ecfeff}
-.green{background:#f0fdf4}.yellow{background:#fefce8}.red{background:#fef2f2}
-.section-title{font-size:17px;font-weight:800;color:#1e293b;margin:3px 0;}
-.action{padding:9px 11px;border-radius:10px;margin:5px 0;font-size:13px;font-weight:650;}
-.action-red{background:#fef2f2;color:#991b1b;border-left:5px solid #dc2626;}
-.action-yellow{background:#fffbeb;color:#92400e;border-left:5px solid #f59e0b;}
-.action-green{background:#f0fdf4;color:#166534;border-left:5px solid #16a34a;}
+    /* Hide Streamlit chrome */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+
+    .block-container {
+        padding: 1.0rem 1.4rem 0.5rem 1.4rem;
+        max-width: 100%;
+    }
+
+    /* Main title */
+    .title {
+        font-size: 2.0rem;
+        font-weight: 800;
+        color: #172554;
+        margin-bottom: 0;
+        line-height: 1.1;
+    }
+
+    .subtitle {
+        color: #64748B;
+        font-size: 0.9rem;
+        margin-bottom: 0.6rem;
+    }
+
+    /* KPI cards */
+    .kpi {
+        border-radius: 14px;
+        padding: 12px 14px;
+        min-height: 92px;
+        box-shadow: 0 2px 8px rgba(15,23,42,.08);
+        border: 1px solid rgba(148,163,184,.18);
+    }
+
+    .kpi-label {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+
+    .kpi-value {
+        font-size: 1.75rem;
+        font-weight: 850;
+        color: #0F172A;
+        line-height: 1.1;
+        margin-top: 4px;
+    }
+
+    .kpi-blue { background: #EFF6FF; }
+    .kpi-green { background: #F0FDF4; }
+    .kpi-yellow { background: #FEFCE8; }
+    .kpi-red { background: #FEF2F2; }
+    .kpi-purple { background: #F5F3FF; }
+    .kpi-cyan { background: #ECFEFF; }
+
+    /* Section cards */
+    .section-title {
+        font-size: 1.0rem;
+        font-weight: 800;
+        color: #1E293B;
+        margin: 0 0 5px 0;
+    }
+
+    .mini-card {
+        border-radius: 12px;
+        padding: 9px 12px;
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        margin-bottom: 5px;
+    }
+
+    .mini-name {
+        font-size: .78rem;
+        font-weight: 700;
+        color: #334155;
+    }
+
+    .mini-number {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #0F172A;
+    }
+
+    .action {
+        border-radius: 12px;
+        padding: 9px 12px;
+        margin-bottom: 5px;
+        font-size: .82rem;
+        font-weight: 650;
+    }
+
+    .action-red { background:#FEF2F2; color:#991B1B; border-left:5px solid #DC2626; }
+    .action-yellow { background:#FFFBEB; color:#92400E; border-left:5px solid #F59E0B; }
+    .action-green { background:#F0FDF4; color:#166534; border-left:5px solid #16A34A; }
+
+    /* Compact dataframe */
+    [data-testid="stDataFrame"] {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    /* Reduce vertical gaps */
+    div[data-testid="stVerticalBlock"] > div {
+        gap: 0.25rem;
+    }
+
+    /* Sidebar */
+    section[data-testid="stSidebar"] {
+        background: #F8FAFC;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- SYNTHETIC DATA ----------
+# ============================================================
+# DATA
+# ============================================================
+DEFAULT_FILE = Path(__file__).parent / "data" / "synthetic_problem_data.xlsx"
+
 @st.cache_data
-def make_data():
-    np.random.seed(42)
+def load_data(uploaded_file=None):
+    if uploaded_file is not None:
+        if uploaded_file.name.lower().endswith(".csv"):
+            df = pd.read_csv(uploaded_file)
+        else:
+            df = pd.read_excel(uploaded_file)
+    else:
+        df = pd.read_excel(DEFAULT_FILE)
 
-    faculty_sections = {
-        "Geeta Maladkar":["D","L","O"],
-        "Shobha K.B.":["A","B"],
-        "Bhawna S.":["J","K"],
-        "Rajesh A.":["Q","R2"],
-        "B. Manjunath":["M","S"],
-        "Vipanchi V.":["T","P"],
-        "Dr. M. Maheswari":["C"],
-        "Anup A":["G"],
-        "Srividhya C.":["I"],
-        "Arun":["E"],
-        "Purushotham H.C.":["R"],
-        "Pankaj Adatiya":["N"],
-    }
+    df.columns = [str(c).strip() for c in df.columns]
 
-    section_faculty = {
-        s:f for f, ss in faculty_sections.items() for s in ss
-    }
+    for col in [
+        "Student Name", "USN", "Section", "Faculty", "Problem Title",
+        "Selected Task", "Proposed AI Tool(s)", "Submission Status"
+    ]:
+        if col not in df.columns:
+            df[col] = ""
 
-    problems = [
-        "Reducing Food Waste in College Cafeterias",
-        "Improving Student Attendance Tracking",
-        "Reducing Queue Time at Campus Cafeteria",
-        "Improving Retail Inventory Management",
-        "Customer Complaint Resolution",
-        "Personalized Learning Support",
-        "Reducing Paper Usage in Administration",
-        "Improving Small Business Social Media",
-        "Optimizing Library Book Availability",
-        "Reducing Delivery Delays",
-        "Improving Waste Segregation",
-        "Streamlining Event Registration",
-        "Reducing Manual Data Entry",
-        "Improving Customer Feedback Analysis"
-    ]
+        df[col] = df[col].fillna("").astype(str).str.strip()
 
-    tasks = [
-        "Task 2 – Documentation",
-        "Task 3 – Presentation",
-        "Task 4 – Data Analytics / ERP"
-    ]
+    if "Problem ID Progress %" not in df.columns:
+        progress = {
+            "Submitted": 100,
+            "Pending": 0,
+            "Revision Required": 60
+        }
+        df["Problem ID Progress %"] = (
+            df["Submission Status"].map(progress).fillna(0)
+        )
 
-    tools = [
-        "ChatGPT","Gemini","Microsoft Copilot","Canva",
-        "Gamma","Power BI","Excel","ChatGPT; Canva",
-        "ChatGPT; Power BI","Gemini; Canva"
-    ]
+    df["Problem ID Progress %"] = pd.to_numeric(
+        df["Problem ID Progress %"], errors="coerce"
+    ).fillna(0).clip(0, 100)
 
-    statuses = ["Submitted","Pending","Revision Required"]
+    return df
 
-    rows=[]
-    sections=list(section_faculty.keys())
 
-    for i in range(1,51):
-        sec=np.random.choice(sections)
-        faculty=section_faculty[sec]
-        status=np.random.choice(statuses,p=[.76,.16,.08])
-        progress={
-            "Submitted":np.random.randint(70,101),
-            "Pending":np.random.randint(0,61),
-            "Revision Required":np.random.randint(45,81)
-        }[status]
-
-        rows.append({
-            "USN":f"SYN-AIC26-{i:03d}",
-            "Student":f"Synthetic Student {i:02d}",
-            "Section":sec,
-            "Faculty":faculty,
-            "Problem":np.random.choice(problems),
-            "Task":np.random.choice(tasks,p=[.30,.28,.42]),
-            "AI Tool":np.random.choice(tools),
-            "Status":status,
-            "Progress":progress
-        })
-
-    return pd.DataFrame(rows)
-
-df=make_data()
-
-# ---------- SIDEBAR ----------
+# ============================================================
+# SIDEBAR
+# ============================================================
 with st.sidebar:
-    st.markdown("## 🎯 Filters")
-    faculty_filter=st.multiselect("Faculty",sorted(df.Faculty.unique()))
-    section_filter=st.multiselect("Section",sorted(df.Section.unique()))
+    st.markdown("## 🎯 AIC Filters")
+    uploaded = st.file_uploader(
+        "Replace synthetic data",
+        type=["xlsx", "xls", "csv"]
+    )
 
-filtered=df.copy()
+df = load_data(uploaded)
+
+with st.sidebar:
+    faculties = sorted(df["Faculty"].dropna().unique().tolist())
+    sections = sorted(df["Section"].dropna().unique().tolist())
+
+    faculty_filter = st.multiselect("Faculty", faculties)
+    section_filter = st.multiselect("Section", sections)
+
+    if st.button("↻ Reset Filters"):
+        st.rerun()
+
+filtered = df.copy()
 
 if faculty_filter:
-    filtered=filtered[filtered.Faculty.isin(faculty_filter)]
+    filtered = filtered[filtered["Faculty"].isin(faculty_filter)]
+
 if section_filter:
-    filtered=filtered[filtered.Section.isin(section_filter)]
+    filtered = filtered[filtered["Section"].isin(section_filter)]
 
-# ---------- HEADER ----------
-c1,c2=st.columns([7,1])
-with c1:
-    st.markdown("<h1>🎯 AIC Portfolio Challenge</h1>",unsafe_allow_html=True)
+# ============================================================
+# KPI CALCULATIONS
+# ============================================================
+total = len(filtered)
+submitted = int((filtered["Submission Status"] == "Submitted").sum())
+pending = int((filtered["Submission Status"] == "Pending").sum())
+revision = int((filtered["Submission Status"] == "Revision Required").sum())
+
+submission_rate = round(submitted / total * 100, 1) if total else 0
+avg_progress = round(filtered["Problem ID Progress %"].mean(), 1) if total else 0
+
+faculty_count = filtered["Faculty"].nunique()
+section_count = filtered["Section"].nunique()
+
+# ============================================================
+# HEADER
+# ============================================================
+h1, h2 = st.columns([7, 1])
+
+with h1:
     st.markdown(
-        '<div class="subtitle">Coordinator Command Centre • Problem Identification • Synthetic Demo</div>',
-        unsafe_allow_html=True)
-with c2:
+        '<div class="title">🎯 AIC Portfolio Challenge</div>',
+        unsafe_allow_html=True
+    )
     st.markdown(
-        '<div style="text-align:right;color:#16a34a;font-weight:700;">● ACTIVE</div>',
-        unsafe_allow_html=True)
+        '<div class="subtitle">Coordinator Command Centre • Problem Identification</div>',
+        unsafe_allow_html=True
+    )
 
-# ---------- KPIs ----------
-total=len(filtered)
-submitted=int((filtered.Status=="Submitted").sum())
-pending=int((filtered.Status=="Pending").sum())
-revision=int((filtered.Status=="Revision Required").sum())
-rate=round(submitted/total*100,1) if total else 0
-avg=round(filtered.Progress.mean(),1) if total else 0
+with h2:
+    st.markdown(
+        '<div style="text-align:right;color:#64748B;font-size:.8rem;">LIVE PROTOTYPE<br>'
+        '<b style="color:#16A34A;">● ACTIVE</b></div>',
+        unsafe_allow_html=True
+    )
 
-cards=[
-    ("👥","STUDENTS",total,"blue"),
-    ("👨‍🏫","FACULTY",filtered.Faculty.nunique(),"purple"),
-    ("🏫","SECTIONS",filtered.Section.nunique(),"cyan"),
-    ("📝","SUBMITTED",submitted,"green"),
-    ("⏳","PENDING",pending,"yellow"),
-    ("⚠️","REVISION",revision,"red")
+# ============================================================
+# KPI ROW
+# ============================================================
+kpis = [
+    ("👥", "STUDENTS", total, "kpi-blue"),
+    ("👨‍🏫", "FACULTY", faculty_count, "kpi-purple"),
+    ("🏫", "SECTIONS", section_count, "kpi-cyan"),
+    ("📝", "SUBMITTED", submitted, "kpi-green"),
+    ("⏳", "PENDING", pending, "kpi-yellow"),
+    ("⚠️", "REVISION", revision, "kpi-red"),
 ]
 
-cols=st.columns(6)
-for col,(icon,label,value,colour) in zip(cols,cards):
+cols = st.columns(6)
+
+for col, (icon, label, value, colour) in zip(cols, kpis):
     with col:
         st.markdown(
-            f'<div class="kpi {colour}"><div class="kpi-label">{icon} {label}</div>'
-            f'<div class="kpi-value">{value}</div></div>',
-            unsafe_allow_html=True)
+            f"""
+            <div class="kpi {colour}">
+                <div class="kpi-label">{icon} {label}</div>
+                <div class="kpi-value">{value}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-st.markdown("<div style='height:8px'></div>",unsafe_allow_html=True)
+st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-# ---------- THREE PANELS ----------
-a,b,c=st.columns([1,1,1])
+# ============================================================
+# MIDDLE ROW
+# ============================================================
+left, middle, right = st.columns([1.15, 1.0, 1.15])
 
-with a:
-    st.markdown('<div class="section-title">📈 Overall Progress</div>',unsafe_allow_html=True)
-    p=pd.DataFrame({"Value":[rate,avg]},index=["Submission Rate","Avg Progress"])
-    st.bar_chart(p,height=170)
-
-with b:
-    st.markdown('<div class="section-title">🎯 Task Selection</div>',unsafe_allow_html=True)
-    t=filtered.Task.value_counts()
-    st.bar_chart(t,height=170)
-
-with c:
-    st.markdown('<div class="section-title">🤖 AI Tool Adoption</div>',unsafe_allow_html=True)
-    tool_counts={}
-    for tool in ["ChatGPT","Gemini","Microsoft Copilot","Canva","Gamma","Power BI","Excel"]:
-        tool_counts[tool]=int(filtered["AI Tool"].str.contains(tool,case=False,na=False).sum())
-    st.bar_chart(pd.Series(tool_counts).sort_values(ascending=False),height=170)
-
-# ---------- LOWER PANELS ----------
-left,right=st.columns([1.65,1])
-
+# ---------- OVERALL PROGRESS ----------
 with left:
-    st.markdown('<div class="section-title">👨‍🏫 Faculty Status</div>',unsafe_allow_html=True)
-    fs=filtered.groupby("Faculty").agg(
-        Students=("USN","count"),
-        Submitted=("Status",lambda x:(x=="Submitted").sum()),
-        Pending=("Status",lambda x:(x=="Pending").sum()),
-        Revision=("Status",lambda x:(x=="Revision Required").sum())
-    ).reset_index()
-    fs["Submission %"]=(fs.Submitted/fs.Students*100).round(1)
-    fs["Status"]=fs["Submission %"].apply(lambda x:"🟢" if x>=85 else ("🟡" if x>=70 else "🔴"))
-    st.dataframe(
-        fs[["Status","Faculty","Students","Submitted","Pending","Revision","Submission %"]]
-        .sort_values("Submission %",ascending=False),
-        use_container_width=True,height=205,hide_index=True)
+    st.markdown('<div class="section-title">📈 Overall Progress</div>',
+                unsafe_allow_html=True)
 
+    progress_df = pd.DataFrame({
+        "Metric": ["Submission Rate", "Average Progress"],
+        "Value": [submission_rate, avg_progress]
+    }).set_index("Metric")
+
+    st.bar_chart(
+        progress_df,
+        height=190,
+        use_container_width=True
+    )
+
+# ---------- TASK DISTRIBUTION ----------
+with middle:
+    st.markdown('<div class="section-title">🎯 Task Selection</div>',
+                unsafe_allow_html=True)
+
+    task_df = (
+        filtered.groupby("Selected Task")
+        .size()
+        .reset_index(name="Students")
+        .sort_values("Students", ascending=False)
+    )
+
+    if not task_df.empty:
+        st.bar_chart(
+            task_df.set_index("Selected Task"),
+            height=190,
+            use_container_width=True
+        )
+
+# ---------- AI TOOLS ----------
 with right:
-    st.markdown('<div class="section-title">🚨 Action Required</div>',unsafe_allow_html=True)
-    if pending:
-        st.markdown(f'<div class="action action-red">🔴 <b>{pending}</b> students pending</div>',unsafe_allow_html=True)
-    if revision:
-        st.markdown(f'<div class="action action-yellow">🟡 <b>{revision}</b> revisions required</div>',unsafe_allow_html=True)
-    low=int((fs["Submission %"]<70).sum())
-    if low:
-        st.markdown(f'<div class="action action-red">🔴 <b>{low}</b> faculty groups below 70%</div>',unsafe_allow_html=True)
-    colour="green" if rate>=85 else "yellow"
-    icon="🟢" if rate>=85 else "🟡"
-    st.markdown(f'<div class="action action-{colour}">{icon} Overall submission: <b>{rate}%</b></div>',unsafe_allow_html=True)
-    st.markdown(f'<div class="action action-green">📊 Average progress: <b>{avg}%</b></div>',unsafe_allow_html=True)
+    st.markdown('<div class="section-title">🤖 AI Tool Adoption</div>',
+                unsafe_allow_html=True)
 
-# ---------- SEARCH ----------
-st.markdown("<div style='height:3px'></div>",unsafe_allow_html=True)
-search=st.text_input("🔎 Search student / USN",placeholder="e.g. SYN-AIC26-001")
+    tools = [
+        "ChatGPT", "Gemini", "Microsoft Copilot",
+        "Canva", "Gamma", "Power BI", "Excel"
+    ]
+
+    tool_counts = {
+        tool: int(
+            filtered["Proposed AI Tool(s)"]
+            .str.contains(tool, case=False, na=False)
+            .sum()
+        )
+        for tool in tools
+    }
+
+    tool_df = pd.DataFrame.from_dict(
+        tool_counts,
+        orient="index",
+        columns=["Students"]
+    ).sort_values("Students", ascending=False)
+
+    st.bar_chart(
+        tool_df,
+        height=190,
+        use_container_width=True
+    )
+
+# ============================================================
+# BOTTOM ROW
+# ============================================================
+left2, right2 = st.columns([1.55, 1])
+
+# ---------- FACULTY ----------
+with left2:
+    st.markdown('<div class="section-title">👨‍🏫 Faculty Status</div>',
+                unsafe_allow_html=True)
+
+    faculty_summary = (
+        filtered.groupby("Faculty")
+        .agg(
+            Students=("USN", "count"),
+            Submitted=("Submission Status",
+                       lambda x: (x == "Submitted").sum()),
+            Pending=("Submission Status",
+                     lambda x: (x == "Pending").sum()),
+            Revision=("Submission Status",
+                      lambda x: (x == "Revision Required").sum()),
+        )
+        .reset_index()
+    )
+
+    faculty_summary["Submission %"] = (
+        faculty_summary["Submitted"] /
+        faculty_summary["Students"] * 100
+    ).round(1)
+
+    # Compact top-level view
+    faculty_summary["Status"] = faculty_summary["Submission %"].apply(
+        lambda x: "🟢" if x >= 85 else ("🟡" if x >= 70 else "🔴")
+    )
+
+    st.dataframe(
+        faculty_summary[
+            ["Status", "Faculty", "Students",
+             "Submitted", "Pending", "Revision", "Submission %"]
+        ].sort_values("Submission %", ascending=False),
+        use_container_width=True,
+        height=225,
+        hide_index=True
+    )
+
+# ---------- ACTION REQUIRED ----------
+with right2:
+    st.markdown('<div class="section-title">🚨 Action Required</div>',
+                unsafe_allow_html=True)
+
+    low_submission = int(
+        (faculty_summary["Submission %"] < 70).sum()
+    )
+
+    if pending > 0:
+        st.markdown(
+            f'<div class="action action-red">🔴 <b>{pending}</b> students pending Problem Identification</div>',
+            unsafe_allow_html=True
+        )
+
+    if revision > 0:
+        st.markdown(
+            f'<div class="action action-yellow">🟡 <b>{revision}</b> submissions require revision</div>',
+            unsafe_allow_html=True
+        )
+
+    if low_submission > 0:
+        st.markdown(
+            f'<div class="action action-red">🔴 <b>{low_submission}</b> faculty groups below 70%</div>',
+            unsafe_allow_html=True
+        )
+
+    if submission_rate >= 85:
+        st.markdown(
+            f'<div class="action action-green">🟢 Overall submission rate is <b>{submission_rate}%</b></div>',
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            f'<div class="action action-yellow">🟡 Overall submission rate is <b>{submission_rate}%</b></div>',
+            unsafe_allow_html=True
+        )
+
+    st.markdown(
+        f'<div class="action action-green">📊 Average Problem ID progress: <b>{avg_progress}%</b></div>',
+        unsafe_allow_html=True
+    )
+
+# ============================================================
+# OPTIONAL STUDENT SEARCH — COMPACT, NO LONG TABLE
+# ============================================================
+st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+
+search_col, info_col = st.columns([2, 4])
+
+with search_col:
+    search = st.text_input(
+        "🔎 Search Student / USN",
+        placeholder="Enter USN or student name..."
+    ).strip().lower()
+
+with info_col:
+    st.markdown(
+        "<div style='padding-top:28px;color:#64748B;font-size:.8rem;'>"
+        "Use the search only when you need individual student details."
+        "</div>",
+        unsafe_allow_html=True
+    )
 
 if search:
-    r=filtered[
-        filtered.USN.str.contains(search,case=False,na=False) |
-        filtered.Student.str.contains(search,case=False,na=False)
+    results = filtered[
+        filtered["USN"].str.lower().str.contains(search, na=False)
+        | filtered["Student Name"].str.lower().str.contains(search, na=False)
     ]
-    if len(r):
-        x=r.iloc[0]
-        q1,q2,q3,q4=st.columns(4)
-        q1.metric("Student",x.Student)
-        q2.metric("Section",x.Section)
-        q3.metric("Task",x.Task)
-        q4.metric("Progress",f"{x.Progress}%")
-        st.info(f"**Problem:** {x.Problem}  |  **Faculty:** {x.Faculty}  |  **Status:** {x.Status}")
-    else:
-        st.warning("Student not found.")
 
+    if results.empty:
+        st.warning("No matching student found.")
+    else:
+        r = results.iloc[0]
+
+        a, b, c, d = st.columns(4)
+        a.metric("Student", r["Student Name"])
+        b.metric("Section", r["Section"])
+        c.metric("Task", r["Selected Task"].replace("Task ", "T"))
+        d.metric("Progress", f"{r['Problem ID Progress %']}%")
+
+        st.info(
+            f"**Problem:** {r['Problem Title']}  |  "
+            f"**Faculty:** {r['Faculty']}  |  "
+            f"**Status:** {r['Submission Status']}"
+        )
+
+# ============================================================
+# FOOTER
+# ============================================================
 st.markdown(
-    '<div style="text-align:center;color:#94a3b8;font-size:11px;padding-top:2px;">'
-    'AIC Portfolio Challenge • Coordinator Command Centre • Synthetic Data</div>',
-    unsafe_allow_html=True)
+    """
+    <div style="text-align:center;color:#94A3B8;font-size:.7rem;padding-top:5px;">
+        AIC Portfolio Challenge • Coordinator Command Centre • Synthetic Prototype
+    </div>
+    """,
+    unsafe_allow_html=True
+)
