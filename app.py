@@ -118,7 +118,7 @@ if st.session_state.selected_faculty:
     fdf=df[df.Faculty==fac].copy()
     st.markdown(f'<div class="section">📋 {fac} — Faculty Overview</div>',unsafe_allow_html=True)
     cols=st.columns(5)
-    for c,(code,name,field,cl) in zip(cols,phase_defs):
+    for c,(code,name,field) in zip(cols,phase_defs):
         done=int((fdf[field]=="Completed").sum()) if field=="P5" else int((fdf[field]=="Submitted").sum())
         pct=done/len(fdf)*100
         c.markdown(f'<div class="phase {code.lower() if code.lower() in ["p1","p2","p3","p4","p5"] else ""}" style="min-height:80px"><div class="pno">{code}</div><div class="pname">{name}</div><div class="big">{pct:.0f}%</div><div style="font-size:10px;font-weight:750">{done} {"Completed" if field=="P5" else "Submitted"}</div></div>',unsafe_allow_html=True)
