@@ -450,7 +450,8 @@ st.markdown(
     'AIC Portfolio Challenge • 1,100 Synthetic Students • No Marks Displayed'
     '</div>',
     unsafe_allow_html=True
-)import streamlit as st
+)
+import streamlit as st
 import pandas as pd
 import numpy as np
 
